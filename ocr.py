@@ -95,11 +95,12 @@ class SpriteIdentifier(object):
 
 
 class StreamProcessor(object):
-    def __init__(self, bufsize=120, ratelimit=True, frame_skip=0, default_handlers=True):
+    def __init__(self, bufsize=120, ratelimit=True, frame_skip=0, default_handlers=True, video_loc=None):
         self.frame_queue = Queue.Queue(bufsize)
         self.ratelimit = ratelimit
         self.frame_skip = frame_skip
         self.handlers = []
+        self.video_loc = video_loc
         if default_handlers:
             self.handlers.append(video.ScreenExtractor().handle)
             self.handlers.append(SpriteIdentifier().handle)
@@ -123,6 +124,10 @@ class StreamProcessor(object):
                     except Queue.Full:
                         continue
                 else:
+                    if self.video_loc:
+                        print 'stream ended'
+                        self.frame_queue.put(None)
+                        return
                     print 'failed grabbing frame, reconnecting'
                     break
 
@@ -148,10 +153,17 @@ class StreamProcessor(object):
                 time.sleep(max(0, 1/60. - (cur - prev) + 1/600.*(60-qsize)))
 
     def get_stream_location(self):
-        streamer = livestreamer.Livestreamer()
-        plugin = streamer.resolve_url('http://twitch.tv/twitchplayspokemon')
-        streams = plugin.get_streams()
-        return streams['source'].url
+        if self.video_loc:
+            return self.video_loc
+        while True:
+            try:
+                streamer = livestreamer.Livestreamer()
+                plugin = streamer.resolve_url('http://twitch.tv/twitchplayspokemon')
+                streams = plugin.get_streams()
+                return streams['source'].url
+            except KeyError:
+                print 'unable to connect to stream, sleeping 30 seconds...'
+                time.sleep(30)
 
     def run(self):
         thread.start_new_thread(self.grab_frames, ())
