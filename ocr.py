@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# アウエ
 
 import os
 import sys
@@ -6,6 +8,8 @@ import time
 import thread
 import traceback
 import Queue
+
+import codecs
 
 import livestreamer
 import cv2
@@ -34,7 +38,7 @@ class SpriteIdentifier(object):
     def make_tilemap(self, name):
         path = os.path.abspath(os.path.dirname(__file__)) + '/' + name
         tiles = cv2.cvtColor(cv2.imread(path + '.png'), cv2.COLOR_BGR2GRAY) < 128
-        tile_text = open(path + '.txt').read()
+        tile_text = codecs.open(path + '.txt','r','utf-8').read()
 
         tile_map = {}
 
@@ -157,7 +161,7 @@ class StreamProcessor(object):
 class LogHandler(object):
     def __init__(self, key, fname, rep=None):
         self.key = key
-        self.fd = open(fname, 'a')
+        self.fd = codecs.open(fname, 'a','utf-8')
         self.last = ''
         self.rep = rep or (lambda s: s.replace('\n', '`'))
 

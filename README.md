@@ -1,4 +1,4 @@
-##pokr
+﻿##PokéTEXT
 ======
 
 An OCR script for the TwitchPlaysPokemon stream.
@@ -18,7 +18,7 @@ An OCR script for the TwitchPlaysPokemon stream.
 ##Usage
 ```ocr.py [--show] ```: runs, displaying current status on stdout and dumping frames to frames.log
 
-Pokr can also be used as a module:
+PokéTEXT can also be used as a module:
 
     import pokr
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# アウエ
 import gzip
 import os
 import struct

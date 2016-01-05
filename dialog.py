@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# アウエ
+
 import itertools
 import re
 
