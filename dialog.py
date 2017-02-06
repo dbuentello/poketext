@@ -1,5 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# アウエ
+
 import itertools
 import re
+import pprint
 
 def dist_merge(s1, s2):
     '''
@@ -23,6 +28,10 @@ class BoxReader(object):
     '''Find each dialog box in the text version of the screen'''
 
     COORD_DIALOG = (0, 12, 19, 17)
+    COORD_DIALOG_SMALL = (0, 14, 19, 17)
+    COORD_DIALOG_PC = (0, 15, 19, 17)
+    COORD_DIALOG_PC_CURRENT_BOX = (0, 0, 19, 3)
+    COORD_DIALOG_PC_CURRENT_MON_NAME = (8, 2, 19, 13)
     banned_phrases = (
         'SAVE   \n',    # don't output the menu
     )
@@ -39,7 +48,8 @@ class BoxReader(object):
     def add_dialog_handler(self, handler):
         self.dialog_handlers.append(handler)
 
-    def handle_dialog(self, text, lines, timestamp):
+    def handle_dialog(self, text, lines):
+    #def handle_dialog(self, text, lines, timestamp):
         #print 'handle_dialog', repr(text), self.continued
 
         if text == '':  # dialog disappeared
@@ -64,7 +74,8 @@ class BoxReader(object):
                 out = re.sub(r'\s+', ' ', out)
                 out = re.sub(r'- ', '', out)
                 for handler in self.dialog_handlers:
-                    handler(out, lines, timestamp)
+                    #handler(out, lines, timestamp)
+                    handler(out, lines)
                 self.lastgroup = self.group
                 self.group = []
             self.last = text
@@ -91,14 +102,14 @@ class BoxReader(object):
 
         lines = data['full']
         lines = [map(conv_tile_or_text, lines[20 * i : 20 * i + 20]) for i in range(18)]
-        timestamp = data['timestamp']
+	#print lines
+        #timestamp = data['timestamp']
         boxes = []
 
         for box_y in range(18):
             for box_x in range(20):
                 if lines[box_y][box_x] == 'o':  # top left corner
                     # might be a dialog box, trace
-
                     top_x = box_x + 1
                     # top line
                     while top_x < 20 and lines[box_y][top_x] == '-':
@@ -120,9 +131,23 @@ class BoxReader(object):
                         box += '\n'
                     boxes.append(((box_x, box_y, top_x, left_y), box))
         for coord, box in boxes:
+	    #print coord, box
             if coord == self.COORD_DIALOG:
-                self.handle_dialog(box, lines, timestamp)
+		#print 'BIG'
+                #self.handle_dialog(box, lines, timestamp)
+                self.handle_dialog(box, lines)
                 break
+	    elif coord == self.COORD_DIALOG_SMALL:
+		#print "SMALL"
+		self.handle_dialog(box, lines)
+	    elif coord == self.COORD_DIALOG_PC:
+		#print "PC TIME UGH NOOOO"
+		self.handle_dialog(box, lines)
+	    elif coord == self.COORD_DIALOG_PC_CURRENT_BOX:
+		print "CURRENT SOMETHING OR CALL"
+#		self.handle_dialog(box, lines)
+#	    elif coord == self.COORD_DIALOG_PC_CURRENT_MON_NAME:
+#		self.handle_dialog(box, lines)
             else:
                 continue
                 for banned_phrase in self.banned_phrases:
@@ -131,7 +156,8 @@ class BoxReader(object):
                 else:
                     print '%2d %2d %2d %2d' % coord, box.replace('\n', '`')
         else:
-            self.handle_dialog('', lines, timestamp)
+            #self.handle_dialog('', lines, timestamp)
+            self.handle_dialog('', lines)
 
 class BattleState(object):
     '''
@@ -143,15 +169,20 @@ class BattleState(object):
     re_trainer = re.compile(r'(.*) wants to fight')
     re_enemy_faint = re.compile(r'Enemy .* fainted')
     re_opponent_level = re.compile(r'@(\d\d)')
-
+    #re_opponent_gender = re.compile(r'@(.)')
+    #re_opponent_gender = re.compile(r'@(.)')
+    #re_opponent_gender = re.compile(r'(?:F|M)+')
+    #re_opponent_gender = re.compile(ur'(?:\u2640|\u2642)+', re.UNICODE)
+    re_opponent_gender = re.compile(ur'(?:\u2640|\u2642|\u0020)+', re.UNICODE)
     banned_phrases = ('Choose a POKeMON', 'already out', 'Come back', 'OAK:',
-            'which POKeMON', 'will to fight', 'catchy tune', 'about to use', 'change POKeMON',
-            'no running from', 'Thats too impor')
+            'which POKéMON', 'Which ᵖᵏᵐᶰ', 'will to fight', 'catchy tune', 'about to use', 'change POKéMON',
+            'no running from', 'Thats too impor', 'Waiting!')
 
     STATE_NORMAL = 0
     STATE_WILD_BEATEN = 1
 
-    def __init__(self, start_text, timestamp):
+    #def __init__(self, start_text, timestamp):
+    def __init__(self, start_text):
         self.last_hp = (0, 0, 0)
         m_wild = self.re_wild.match(start_text)
         m_trainer = self.re_trainer.match(start_text)
@@ -160,10 +191,12 @@ class BattleState(object):
             self.opponent = m_trainer.group(1)
         else:
             self.opponent = m_wild.group(1)
-        self.start_time = timestamp
-        self.lines = [(timestamp, start_text)]
+        #self.start_time = timestamp
+        #self.lines = [(timestamp, start_text)]
+        self.lines = [(start_text)]
         self.state = self.STATE_NORMAL
         self.opponent_level = 0
+        #self.opponent_gender = 0
 
     def read_hp(self, lines):
         my_hp_bar = ''.join(lines[10][11:18]).split('/')
@@ -183,14 +216,35 @@ class BattleState(object):
         except ValueError:
             return 0
 
-    def feed(self, text, lines, timestamp):
+    def read_enemy_gender(self, lines):
+        try:
+            opp_gender = lines[1][9]
+	    #pprint.pprint(opp_gender)
+	    #pprint.pprint(opp_gender[0])
+	    #pprint.pprint(lines[1][6:9])
+            if opp_gender == u'\u2640':
+                print "\u2640"
+                return "♀"
+	    elif opp_gender == u'\u2642':
+                print "\2642"
+		return "♂"
+            elif opp_gender == u'\u0020':
+		print "UNDEFINED EnGen"
+                return "N/A"
+            else:
+                return '???'
+        except ValueError:
+            return '0'
+
+    #def feed(self, text, lines, timestamp):
+    def feed(self, text, lines):
         '''
         handle a new line of dialog
         returns True if it's the end of an encounter
         '''
         if self.state == self.STATE_WILD_BEATEN:
             # our opponent has fainted, but we might have EXP gain lines
-            if 'EXP' not in text:
+            if 'Exp' not in text:
                 return True
 
         text = self.annotate(text, lines)
@@ -199,15 +253,15 @@ class BattleState(object):
             if banned in text:
                 break
         else:
-            self.lines.append((timestamp, text))
+            self.lines.append((text))
 
-        if 'blacked out' in text:
+        if 'whited out' in text:
             return True
         if self.trainer_battle:
             if 'for winning' in text:
                 return True
         else:
-            if 'was caught' in text or 'away' in text:
+            if 'was caught' in text or 'away' or 'was sent to BILL' in text:
                 return True
             if self.re_enemy_faint.search(text):
                 self.state = self.STATE_WILD_BEATEN
@@ -217,21 +271,43 @@ class BattleState(object):
         Add useful context (levels, damage amounts) to a line of dialog
         '''
         if self.re_wild.match(text) or self.re_trainer.match(text):
+	    print "WILD OR TRAINER"
             self.opponent_level = 0
+	    self.opponent_gender = 'N/A'
+            #self.opponent_gender = 0
+
+#        if 'Bye,' in text:
+#	   text = re.sub(r'Bye, ( \S*!)$' % text)
 
         if 'sent out' in text:
+	    print "SENT OUT!"
             level = self.read_enemy_level(lines)
             if level:
                 text = re.sub(r'sent out ( \S*!)$', r'sent out L%02d\1' % level, text)
-
+#        if self.opponent_gender == 0:
+#            self.opponent_gender = self.read_enemy_gender(lines)
+#            if self.opponent_gender:
+#                text += ' EnGend:%s' % self.opponent_gender
         if self.opponent_level == 0:
             self.opponent_level = self.read_enemy_level(lines)
+            self.opponent_gender = self.read_enemy_gender(lines)
+	    #print "self.opponent_level", self.opponent_level
+            #pprint.pprint(lines[1][9])
+            #pprint.pprint(lines[1][9:10])
+            #pprint.pprint(lines[1][10])
+            #pprint.pprint(self.opponent_gender)
+	    #print "self.opponent_gender", self.opponent_gender
             if self.opponent_level:
-                text += ' EnLvl:%d' % self.opponent_level
+		#print self.opponent_level, self.opponent_gender
+                text += ' [EnLvl: %d, EnGend: %s]' % (self.opponent_level, unicode(self.opponent_gender, 'utf-8'))
+	    if self.opponent_level and self.opponent_gender == 'N/A':
+		print "UNKNOWN GENDER PRINT ANYWAY"
+                text += ' [EnLvl: %d, EnGend: N/A]' % self.opponent_level
 
         try:
             hp = self.read_hp(lines)
         except (ValueError, IndexError):
+	    #print hp
             hp = self.last_hp
 
         ext = ''
@@ -241,15 +317,21 @@ class BattleState(object):
             if hp[0] != self.last_hp[0] and hp[1] == self.last_hp[1]:
                 ext += ' Us: %d/%d (%d)' % (hp[0], hp[1], hp[0]-self.last_hp[0])
             self.last_hp = hp
+	print "EXT START"
+	print ext
+	print "return"
         return text + ext
-
+	print "EXT STOP"
     def __str__(self):
         out = ''
         if self.trainer_battle:
-            out += 'Trainer battle with %s at %s\n' % (self.opponent, self.start_time)
+            #out += 'Trainer battle with %s at %s\n' % (self.opponent, self.start_time)
+            out += 'Trainer battle with %s\n' % (self.opponent)
         else:
-            out += 'Wild encounter with L%02d %s at %s\n' % (
-                self.opponent_level, self.opponent, self.start_time)
-        for timestamp, text in self.lines[1:]:
-            out += '   %-14s %s\n' % (timestamp, text)
+            out += 'Wild encounter with L%02d %s\n' % (self.opponent_level, self.opponent)
+            #out += 'Wild encounter with L%02d %s at %s\n' % (self.opponent_level, self.opponent, self.start_time)
+        #for timestamp, text in self.lines[1:]:
+            #out += '   %-14s %s\n' % (timestamp, text)
+        for text in self.lines[1:]:
+            out += '   %s\n' % (text)
         return out

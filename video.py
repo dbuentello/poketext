@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# アウエ
+
 import gzip
 import os
 import struct
@@ -84,7 +88,6 @@ class ScreenCompressor(object):
                         a >>= 2
 
 if __name__ == '__main__':
-    import timestamp
 
     class SavedStreamProcessor(ocr.StreamProcessor):
         def get_stream_location(self):
@@ -96,7 +99,6 @@ if __name__ == '__main__':
 
     proc = SavedStreamProcessor(default_handlers=False)
     proc.add_handler(ScreenExtractor().handle)
-    proc.add_handler(timestamp.TimestampRecognizer().handle)
     proc.add_handler(ScreenCompressor(debug=True, fname='frames.raw.gz').handle)
     proc.run()
     while True:

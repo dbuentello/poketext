@@ -5,17 +5,28 @@
 30:abcdefghijklmnop
 40:qrstuvwxyz
 50:﻿ÄÖÜäöü
-60ws:'d'l'm'r's't'v
+#60ws:'d'l'm'r's't'v
+60ws:'d
+61ws:'l
+62ws:'m
+63ws:'r
+64ws:'s
+65ws:'t
+66ws:'v
 70:'  -  ?!.&é }> ♂
 #é
 71ws:ᵖᵏ
 72ws:ᵐᶰ
+73:-
 #7Aw:E
-80:$ ./,♀0123456789
-81w:x*
-85w:Fg
-7Ew:VdMg
+80:$×./,♀0123456789
+#85w:Fg
+#7Ew:VdMg
 A0w:POKé
+A2:“
+A3:”
+A4:·
+A5:…
 A9:o-o|oo
 B0:o-o|ooo-o|ooo-o
 C0:o-o|ooo-o|oo|oo

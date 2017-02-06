@@ -8,19 +8,22 @@
 60ws:'d'l'm'r's't'v
 70:'  -  ?!.&é }> ♂
 #é
-71ws:ᵖᵏ
-72ws:ᵐᶰ
+71w:ᵖᵏ
+72w:ᵐᶰ
 #7Aw:E
 80:$ ./,♀0123456789
-81w:x*
-85w:Fg
-7Ew:VdMg
+81:×
+#85w:Fg
+92:📱
+#7Ew:VdMg
+7Ew:Vd
 A0w:POKé
 A9:o-o|oo
 B0:o-o|ooo-o|ooo-o
 C0:o-o|ooo-o|oo|oo
+C1:o
 D0:o-o|ooo-o|oo
 F0w:HPP:_H1H2H3H4H5H6H7H=H| o | Lv<
 103:|o
-105w:..
+105:…
 108w:->IDNº

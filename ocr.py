@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# アウエ
 
 import os
 import re
@@ -8,18 +10,28 @@ import thread
 import traceback
 import Queue
 
-import livestreamer
+import codecs
+
+import streamlink
 import cv2
 
 import delta
-import timestamp
+#import timestamp
 import video
 
 
 def extract_screen(raw):
-    screen_x, screen_y = 8, 41
-    screen = raw[screen_y:screen_y+432, screen_x:screen_x+480]
-    screen = cv2.resize(screen, (160, 144), interpolation=cv2.INTER_AREA)
+    screen_x, screen_y = 319, 60
+    #screen = raw[screen_y:screen_y+574, screen_x:screen_x+638]
+    #screen = raw[screen_y:screen_y+575, screen_x:screen_x+639]
+    #screen = raw[screen_y:screen_y+574, screen_x:screen_x+637]
+    screen = raw[screen_y:screen_y+579, screen_x:screen_x+643]
+    scale0 = 1
+    scale1 = scale0 * 160
+    scale2 = scale0 * 144
+    screen = cv2.resize(screen, (scale1, scale2))
+    #screen = cv2.resize(screen, (160, 144), interpolation=cv2.INTER_NEAREST)
+    #screen = cv2.resize(screen, (320, 288), interpolation=cv2.INTER_CUBIC)
     return screen
 
 
@@ -27,11 +39,13 @@ class SpriteIdentifier(object):
     '''Convert image sprites into a text format'''
     def __init__(self, debug=False):
         self.debug = debug
-        if self.debug:
-            cv2.namedWindow("Stream", cv2.WINDOW_AUTOSIZE)
-            cv2.namedWindow("Game", cv2.WINDOW_AUTOSIZE)
+        #if self.debug:
+            # cv2.namedWindow("Stream", cv2.WINDOW_AUTOSIZE)
+            # cv2.namedWindow("Game", cv2.WINDOW_AUTOSIZE)
+        #self.tile_text = self.make_tile_text('crystal_hack_dashdot.txt')
+        #self.tile_map = self.make_tilemap('crystal_hack_dashdot_regular_viet.png')
+        self.tile_text = self.make_tile_text('crystal_tiles_genderfix.txt')
         self.tile_map = self.make_tilemap('crystal_tiles.png')
-        self.tile_text = self.make_tile_text('crystal_tiles.txt')
 
 
     def make_tile_text(self, fname):
@@ -44,7 +58,7 @@ class SpriteIdentifier(object):
                 return x[0] + x
 
         out = {}
-        for line in open(fname):
+        for line in codecs.open(fname, 'r', 'utf-8'):
             m = re.match('([0-9A-F]+)([a-z]*):(.*)', line)
             if m:
                 offset = int(m.group(1), 16)
@@ -86,6 +100,7 @@ class SpriteIdentifier(object):
         for n,bit in enumerate(bits):
             if bit:
                 out |= 1<<(63-n)
+	#print out
         return out
 
     def screen_to_tiles(self, screen):
@@ -125,7 +140,8 @@ class SpriteIdentifier(object):
 
     def handle(self, data):
         if self.debug:
-            cv2.imshow('Stream', data['frame'])
+            # cv2.imshow('Stream', data['frame'])
+            cv2.namedWindow('Screen', 0x01 | 0x10)
             cv2.imshow('Screen', data['screen'])
             cv2.waitKey(1)
 
@@ -156,7 +172,7 @@ class StreamProcessor(object):
         if default_handlers:
             self.handlers.append(video.ScreenExtractor().handle)
             self.handlers.append(SpriteIdentifier(debug=debug).handle)
-            self.handlers.append(timestamp.TimestampRecognizer().handle)
+            #self.handlers.append(timestamp.TimestampRecognizer().handle)
 
     def add_handler(self, handler):
         self.handlers.append(handler)
@@ -213,10 +229,10 @@ class StreamProcessor(object):
             return self.video_loc
         while True:
             try:
-                streamer = livestreamer.Livestreamer()
+                streamer = streamlink.Streamlink()
                 plugin = streamer.resolve_url('http://twitch.tv/twitchplayspokemon')
                 streams = plugin.get_streams()
-                return streams['source'].url
+                return streams['high'].url
             except KeyError:
                 print 'unable to connect to stream, sleeping 30 seconds...'
                 time.sleep(30)
@@ -229,7 +245,7 @@ class StreamProcessor(object):
 class LogHandler(object):
     def __init__(self, key, fname, rep=None):
         self.key = key
-        self.fd = open(fname, 'a')
+        self.fd = codecs.open(fname, 'a', 'utf-8')
         self.last = ''
         self.rep = rep or (lambda s: s.replace('\n', '`'))
 
@@ -237,13 +253,15 @@ class LogHandler(object):
         text = data[self.key]
         if text != self.last:
             self.last = text
-            self.fd.write(self.rep(text) + data['timestamp'] + '\n')
+	    #self.fd.write(self.rep(text) + data['timestamp'] + '\n')
+            self.fd.write(self.rep(text) + '\n')
 
 if __name__ == '__main__':
     #SpriteIdentifier().test_corpus();q
 
     def handler_stdout(data):
-        print '\x1B[H' + data['timestamp'] + ' '*10
+        #print '\x1B[H' + data['timestamp'] + ' '*10
+        print '\x1B[H' + ' '*10
         print data['dithered']
 
     import delta
@@ -251,9 +269,13 @@ if __name__ == '__main__':
 
     class DialogPusher(object):
         def __init__(self):
-            self.tracker = dialog.BattleState('blah wants to fight', '')
-        def handle(self, text, lines, timestamp):
-            print timestamp, repr(self.tracker.annotate(text, lines))
+            self.tracker = dialog.BattleState('blah wants to fight')
+        def handle(self, text, lines):
+            #self.tracker = dialog.BattleState('blah wants to fight', '')
+        #def handle(self, text, lines, timestamp):
+        #def handle(self, text, lines):
+            #print timestamp, repr(self.tracker.annotate(text, lines))
+            print repr(self.tracker.annotate(text, lines))
 
 
     box_reader = dialog.BoxReader()
@@ -265,7 +287,7 @@ if __name__ == '__main__':
     except (ValueError, IndexError):
         video_loc = None
     proc = StreamProcessor(debug=debug, video_loc=video_loc)
-    #proc.add_handler(handler_stdout)
+    proc.add_handler(handler_stdout)
     proc.add_handler(LogHandler('text', 'frames.log').handle)
     proc.add_handler(delta.StringDeltaCompressor('dithered', verify=True).handle)
     proc.add_handler(box_reader.handle)

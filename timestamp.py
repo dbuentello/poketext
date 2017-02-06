@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# アウエ
+
 import difflib
 import re
 import numpy

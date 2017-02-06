@@ -6,16 +6,14 @@
 40:qrstuvwxyz
 50:﻿ÄÖÜäöü
 60ws:'d'l'm'r's't'v
-70:'  -  ?!.&é }> ♂
+70:'  -  ?!.&  }> ♂
 #é
-71ws:ᵖᵏ
-72ws:ᵐᶰ
-#7Aw:E
+7Aw:E
 80:$ ./,♀0123456789
 81w:x*
 85w:Fg
 7Ew:VdMg
-A0w:POKé
+A0w:Poké
 A9:o-o|oo
 B0:o-o|ooo-o|ooo-o
 C0:o-o|ooo-o|oo|oo
