@@ -8,7 +8,7 @@ import thread
 import traceback
 import Queue
 
-import livestreamer
+import streamlink
 import cv2
 
 import delta
@@ -213,7 +213,7 @@ class StreamProcessor(object):
             return self.video_loc
         while True:
             try:
-                streamer = livestreamer.Livestreamer()
+                streamer = streamlink.Streamlink()
                 plugin = streamer.resolve_url('http://twitch.tv/twitchplayspokemon')
                 streams = plugin.get_streams()
                 return streams['source'].url
